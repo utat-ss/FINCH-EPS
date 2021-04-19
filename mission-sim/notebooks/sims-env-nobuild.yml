@@ -1,0 +1,39 @@
+name: base
+channels:
+  - defaults
+dependencies:
+  - brotlipy=0.7.0
+  - ca-certificates=2020.10.14
+  - certifi=2020.6.20
+  - cffi=1.14.3
+  - chardet=3.0.4
+  - conda=4.9.2
+  - conda-package-handling=1.7.2
+  - console_shortcut=0.1.1
+  - cryptography=3.2.1
+  - idna=2.10
+  - menuinst=1.4.16
+  - openssl=1.1.1h
+  - pip=20.2.4
+  - powershell_shortcut=0.0.1
+  - pycosat=0.6.3
+  - pycparser=2.20
+  - pyopenssl=19.1.0
+  - pysocks=1.7.1
+  - python=3.8.5
+  - pywin32=227
+  - requests=2.24.0
+  - ruamel_yaml=0.15.87
+  - setuptools=50.3.1
+  - six=1.15.0
+  - sqlite=3.33.0
+  - tqdm=4.51.0
+  - urllib3=1.25.11
+  - vc=14.1
+  - vs2015_runtime=14.16.27012
+  - wheel=0.35.1
+  - win_inet_pton=1.1.0
+  - wincertstore=0.2
+  - yaml=0.2.5
+  - zlib=1.2.11
+prefix: C:\Users\selen\miniconda3
