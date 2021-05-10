@@ -33,12 +33,16 @@ class Satellite():
         self.passover_interval = timings['passover_interval']
         self.passover_duration_exp_off = timings['passover_duration_exp_off']
         self.passover_duration_exp_on = timings['passover_duration_exp_on']
-        self.exp_start_time = timings['pay_start_time']
-        self.exp_interval = timings['pay_interval']
-        self.exp_duration = timings['pay_duration']
+        self.pay_start_time = timings['pay_start_time']
+        self.pay_interval = timings['pay_interval']
+        self.pay_duration = timings['pay_duration']
+        self.pay_cooling_start_time = timings['pay_cooling_start_time']
+        self.pay_cooling_interval = timings['pay_cooling_interval']
+        self.pay_cooling_duration = timings['pay_cooling_duration']
         self.rf_start_time = timings['rf_start_time']
         self.rf_interval = timings['rf_interval']
         self.rf_duration = timings['rf_duration']
+        self.ADCS_duration = timings['ADCS_duration']
         self.heater_setpoints = copy.deepcopy(setpoints)
 
         # Initialize Thermal
@@ -50,13 +54,15 @@ class Satellite():
                        'v': 5.0, 'name': 'Beacon', 'inst_current': 0}
         self.passover = {'state': False, 'i': 1000,
                          'v': 5.0, 'name': 'Passover', 'inst_current': 0}
-        self.exp = {'state': False, 'i': 833,   'v': 12,
-                    'name': 'Imager', 'inst_current': 0}
+        self.pay = {'state': False, 'i': 833,   'v': 12,
+                    'name': 'Imager', 'inst_current': 0} # estimate of 10W
+        self.pay_cooler = {'state': False, 'i': 1000,   'v': 5,
+                    'name': 'Imager', 'inst_current': 0} # estimate of 5W
         self.rf =  {'state': False, 'i': 1160, 'v': 5,
                     'name': 'RF', 'inst_current': 0}
         self.OBC =  {'state': False, 'i': 160, 'v': 3.3,
                     'name': 'OBC', 'inst_current': 0}
-        self.ADCS =  {'state': False, 'i': 300, 'v': 5,
+        self.ADCS =  {'state': False, 'i': 1, 'v': 5,
                     'name': 'ADCS', 'inst_current': 0}
         self.batt_heater = {'state': False, 'i': 250,
                             'v': 5.0, 'name': 'Battery Heater', 'inst_current': 0}
@@ -65,7 +71,7 @@ class Satellite():
         self.bus_const_pwr = {'state': False, 'i': 200,
                               'v': 3.3, 'name': 'Bus', 'inst_current': 0}
 
-        self.loads = [self.exp, self.bus_const_pwr, self.beacon,
+        self.loads = [self.pay, self.pay_cooler, self.bus_const_pwr, self.beacon,
                       self.passover, self.batt_heater, self.pay_heater, self.rf, self.OBC, self.ADCS]
 
         # unit is in mA
@@ -136,17 +142,19 @@ class Satellite():
 
         # Dynamic State Variables
         # Determine which pay_setpoint to use depending on the experiment state
-        pay_setpoint = self.heater_setpoints['payload_exp'] if self.exp['state'] else self.heater_setpoints['payload_stasis']
+        pay_setpoint = self.heater_setpoints['payload_exp'] if self.pay['state'] else self.heater_setpoints['payload_stasis']
         # Determine whether the heaters should be on given the current temperatures
         self.batt_heater['state'] = self.temperatures['battery'] < self.heater_setpoints['battery']
         self.pay_heater['state'] = self.temperatures['payload'] < pay_setpoint
 
         # Time-based variables
         self.beacon['state'] = t % self.beacon_interval < self.beacon_duration
-        self.exp['state'] =  (t > self.exp_start_time) and ((t - self.exp_start_time) % self.exp_interval < self.exp_duration)
-                            #(t < self.exp_start_time + self.exp_duration) and (t > self.exp_start_time)
+        self.pay['state'] =  (t > self.pay_start_time) and ((t - self.pay_start_time) % self.pay_interval < self.pay_duration)
+                            #(t < self.pay_start_time + self.pay_duration) and (t > self.pay_start_time)
             
-        self.ADCS['state'] =  (t > self.exp_start_time) and ((t - self.exp_start_time) % self.exp_interval < self.exp_duration)
+        self.pay_cooler['state'] =  (t > self.pay_cooling_start_time) and ((t - self.pay_cooling_start_time) % self.pay_cooling_interval < self.pay_cooling_duration)
+            
+        self.ADCS['state'] =  (t > self.pay_start_time) and ((t - self.pay_start_time) % self.pay_interval < self.ADCS_duration)
             
         self.rf['state'] =  (t > self.rf_start_time) and (t % self.rf_interval < self.rf_duration)
 
@@ -155,7 +163,7 @@ class Satellite():
         self.OBC['state'] = True
 
         # If the experiment is running, use the short passover time, use the long one otherwise
-        if self.exp['state']:
+        if self.pay['state']:
             self.passover['state'] = t % self.passover_interval < self.passover_duration_exp_on
         else:
             self.passover['state'] = t % self.passover_interval < self.passover_duration_exp_off
@@ -230,7 +238,7 @@ class Satellite():
         '''
 
         # replace this with actual I-V curve of the batteries
-        batt_vmax = 3.6
+        batt_vmax = 4.2
         batt_vmin = 2.5
         return batt_vmin + (self.charge/(self.battery_capacity_mAh)) * (batt_vmax - batt_vmin)
 
